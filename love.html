@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Your Radiant Smile ❤️</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+  <style>
+    body { margin: 0; background: #000; overflow: hidden; font-family: 'Arial'; color: white; }
+    
+    #video { position: fixed; bottom: 10px; right: 10px; width: 150px; border: 2px solid #ff4d6d; border-radius: 10px; z-index: 100; transform: scaleX(-1); }
+    
+    #instructions {
+        position: fixed; top: 20px; left: 20px; background: rgba(255, 77, 109, 0.3);
+        padding: 15px; border-radius: 15px; border: 1px solid #ff4d6d; z-index: 80;
+    }
+
+    /* Message styling */
+    .msg-style { 
+        position: fixed; width: 100%; text-align: center; 
+        font-weight: bold; color: #ff4d6d; text-shadow: 0 0 20px #ff4d6d; 
+        pointer-events: none; z-index: 50; opacity: 0; transition: 0.8s; 
+    }
+    
+    #msg1 { top: 35%; font-size: 4rem; }
+    #msg2 { top: 55%; font-size: 2rem; } /* Chota font taaki screen pe sahi dikhe */
+
+    .particle { position: absolute; top: -50px; font-size: 45px; animation: fall linear forwards; z-index: 10; }
+    @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <video id="video"></video>
+
+  <div id="instructions">
+    <div style="font-size: 1.2rem;">Apne <span style="color: #ff4d6d; font-weight: bold;">Daant Dikhao</span>... 😄</div>
+  </div>
+
+  <div id="msg1" class="msg-style">he he he he he he ! ! ! ! !</div>
+  <div id="msg2" class="msg-style">Bas TU mari same aam j hasti reje Miri MINUDI....😚🫂</div>
+
+  <script>
+    const videoElement = document.getElementById('video');
+    const msg1 = document.getElementById('msg1');
+    const msg2 = document.getElementById('msg2');
+    let isRaining = false;
+
+    function startHeartRain() {
+      if (isRaining) return;
+      isRaining = true;
+
+      // 1. Pehli line dikhao
+      msg1.style.opacity = "1";
+
+      // 2. 1.5 second baad doosri line dikhao
+      setTimeout(() => {
+          msg2.style.opacity = "1";
+      }, 1500);
+
+      // Heart Rain Logic
+      for (let i = 0; i < 40; i++) {
+        setTimeout(() => {
+          const p = document.createElement('div');
+          p.className = 'particle';
+          p.innerHTML = '❤️';
+          p.style.left = Math.random() * 100 + 'vw';
+          p.style.animationDuration = (Math.random() * 2 + 2) + 's';
+          document.body.appendChild(p);
+          setTimeout(() => p.remove(), 4000);
+        }, i * 100);
+      }
+      
+      // 3. 6 second baad sab kuch gayab kar do (taaki user dobara smile kar sake)
+      setTimeout(() => { 
+        msg1.style.opacity = "0"; 
+        msg2.style.opacity = "0"; 
+        isRaining = false; 
+      }, 7000);
+    }
+
+    const faceMesh = new FaceMesh({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`});
+    faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+
+    faceMesh.onResults((results) => {
+      if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+        const points = results.multiFaceLandmarks[0];
+        const upperLipY = points[13].y;
+        const lowerLipY = points[14].y;
+        const mouthVerticalOpenness = Math.abs(upperLipY - lowerLipY);
+        const mouthWidth = Math.hypot(points[61].x - points[291].x, points[61].y - points[291].y);
+
+        if (mouthVerticalOpenness > 0.03 && mouthWidth > 0.16 && !isRaining) { 
+            startHeartRain();
+        }
+      }
+    });
+
+    const camera = new Camera(videoElement, {
+      onFrame: async () => { await faceMesh.send({image: videoElement}); },
+      width: 640, height: 480
+    });
+    camera.start();
+  </script>
+</body>
+</html>
